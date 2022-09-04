@@ -11,8 +11,13 @@ fn main() {
                 vector::basic_vector();
                 vector::various_types_vector()
             }
-            "tree" => tree::list(),
-            _ => println!("Unknown command {}", a),
+            "tree" => {
+                tree::list();
+            }
+            _ => {
+                println!("Unknown command {}", a);
+                println!("Available commands: vector, tree")
+            }
         }
     }
 }
