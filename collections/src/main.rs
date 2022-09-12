@@ -1,5 +1,6 @@
 // Collections
 use std::env;
+mod hashmap;
 mod tree;
 mod vector;
 
@@ -14,9 +15,12 @@ fn main() {
             "tree" => {
                 tree::list();
             }
+            "hashmap" => {
+                hashmap::hashmap();
+            }
             _ => {
                 println!("Unknown command {}", a);
-                println!("Available commands: vector, tree")
+                println!("Available commands: vector, tree, hashmap")
             }
         }
     }
