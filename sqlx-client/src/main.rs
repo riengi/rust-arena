@@ -22,7 +22,8 @@ async fn main() -> Result<(), sqlx::Error> {
         .connect("postgres://dbuser:dbuser_password@localhost/db")
         .await?;
 
-    // Make a simple query to return the given parameter (use a question mark `?` instead of `$1` for MySQL)
+    // SELECT with query!
+    // query! macro makes compile-time query checks, query does NOT
     let rows = sqlx::query!("SELECT * FROM usernames")
         .fetch_all(&pool)
         .await?;
@@ -30,8 +31,35 @@ async fn main() -> Result<(), sqlx::Error> {
     println!("{:?}", rows);
 
     for row in rows {
-        println!("{:?}", row)
+        println!("{:?}", row);
+
+        if let Some(name) = row.name {
+            println!("{}", name);
+        }
     }
+
+    // UPDATE
+    let update_statement = r#"UPDATE usernames SET name = 'Matrix_OLD' WHERE name = 'Matrix'"#;
+    let mut rows_affected = sqlx::query(update_statement).execute(&pool).await?;
+    println!("{:?}", rows_affected);
+
+    // INSERT
+    let insert_statement = r#"INSERT INTO usernames(name) VALUES('Matrix')"#;
+    rows_affected = sqlx::query(insert_statement).execute(&pool).await?;
+    println!("{:?}", rows_affected);
+
+    // SELECT with parameters
+    let name = "Matrix_OLD";
+    let rows = sqlx::query!("SELECT * FROM usernames WHERE name = $1", name)
+        .fetch_all(&pool)
+        .await?;
+
+    println!("Matrix_OLD DB count: {}", rows.len());
+
+    // DELETE
+    let delete_statement = "DELETE FROM usernames WHERE name = 'Matrix_OLD'";
+    let res = sqlx::query(delete_statement).execute(&pool).await?;
+    println!("{:?}", res);
 
     Ok(())
 }
