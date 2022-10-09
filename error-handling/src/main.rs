@@ -1,59 +1,66 @@
-// Unwrap and expect variations 
-fn main() {
-    // matching value
-    match get_option_some() {
-        Some(v) => v,
-        None => panic!(),
-    };
+// Error handling
+// Using anyhow create - allowing return error of any type implementing std::error:Error triat
+// Using thiserror crate - allowing nice error messages
 
-    // using unwrap
-    get_option_some().unwrap();
+use std::{
+    fs::File,
+    process::{ExitCode, Termination},
+};
+mod results;
 
-    // using expect
-    get_option_some().expect("get_option None");
+// Custom Errors
+#[derive(thiserror::Error, Debug, Clone)]
+pub enum MyError {
+    #[error("Internal malfunction")]
+    Internal,
+    #[error("Other issue")]
+    Other,
+    #[error("Input/Output Error, detail: {0}")]
+    InputOutput(String),
+}
 
-    // Result
-    // using expect_err
-    get_result_ok().unwrap();
-    get_result_ok().expect("get_result error");
-
-    // unwrap_err
-    // this panic!
-    // get_result_ok().unwrap_err();
-
-    get_result_err().unwrap_err();
-    get_result_err().expect_err("get_result_err() error expected");
-
-    // unwrap_or passes given value if None or Err
-    println!("unwrap_or");
-    println!("{}",get_option_some().unwrap_or(1));
-    println!("{}",get_option_none().unwrap_or(1));
-
-    // unwrap_or_default passes default value if None or Err
-    println!("{}",get_option_some().unwrap_or_default());
-    println!("{}",get_option_none().unwrap_or_default());
-
-    // unwrap_or_else passes closure if None or Err
-    fn closure() -> u8 {
-        10
+// Implement custom exit codes via Termination trait
+impl Termination for MyError {
+    fn report(self) -> ExitCode {
+        match self {
+            MyError::Internal => ExitCode::from(1),
+            MyError::Other => ExitCode::from(255),
+            MyError::InputOutput(_) => ExitCode::from(3),
+        }
     }
-    println!("{}",get_option_some().unwrap_or_else(closure));
-    println!("{}",get_option_none().unwrap_or_else(closure));
-
 }
 
-fn get_option_some() -> Option<u8> {
-    Some(0)
+// Conversion from std::io::Error
+impl std::convert::From<std::io::Error> for MyError {
+    fn from(err: std::io::Error) -> Self {
+        MyError::InputOutput(err.kind().to_string())
+    }
 }
 
-fn get_option_none() -> Option<u8> {
-    None
+// returning MyError
+fn some_function() -> Result<(), MyError> {
+    return Err(MyError::Internal);
 }
 
-fn get_result_ok() -> Result<(), String> {
+// This one returns original IO error
+fn open_file() -> Result<(), std::io::Error> {
+    // returns Result<File, std::io::Error
+    File::open("foo.txt")?;
     Ok(())
 }
 
-fn get_result_err() -> Result<(), ()> {
-    Err(())
+// This one returns MyError
+fn open_file_own_error() -> Result<(), MyError> {
+    // returns Result<File, std::io::Error
+    File::open("foo.txt")?;
+    Ok(())
+}
+
+fn main() -> Result<(), anyhow::Error> {
+    results::execute();
+
+    open_file_own_error()?;
+    open_file()?;
+    some_function()?;
+    Ok(())
 }
